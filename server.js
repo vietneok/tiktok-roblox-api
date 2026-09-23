@@ -1,11 +1,11 @@
 const express = require('express');
-const { WebcastChat } = require('tiktok-live-connector');
+const { WebcastPushConnection } = require('tiktok-live-connector'); // <-- Đã sửa lỗi ở đây
 
 const app = express();
 app.use(express.json());
 
 // ==========================================
-// TÊN TIKTOK CỦA BẠN (Đã điền)
+// TÊN TIKTOK CỦA BẠN 
 // ==========================================
 const tiktokUsername = "viet1226x"; 
 
@@ -14,7 +14,7 @@ let giftQueue = [];
 // ==========================================
 // 1. CÁI ĂNG-TEN: TỰ BẮT SỰ KIỆN TỪ TIKTOK LIVE
 // ==========================================
-const tiktokLiveConnection = new WebcastChat(tiktokUsername);
+const tiktokLiveConnection = new WebcastPushConnection(tiktokUsername); // <-- Đã sửa lỗi ở đây
 
 tiktokLiveConnection.connect().then(state => {
     console.log(`[OK] Đã kết nối Live của: ${state.roomInfo.owner.uniqueId}`);
