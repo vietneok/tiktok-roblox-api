@@ -1,67 +1,86 @@
 const express = require('express');
-const { WebcastPushConnection } = require('tiktok-live-connector');
+const { WebcastChat } = require('tiktok-live-connector');
 
 const app = express();
+app.use(express.json());
 
-// ĐIỀN TÊN TÀI KHOẢN TIKTOK CỦA BẠN VÀO ĐÂY (bỏ dấu @)
-// Ví dụ: "idoltiktok123"
-const tiktokUsername = "ten_tiktok_cua_ban"; 
+// ==========================================
+// ĐIỀN TÊN TIKTOK CỦA BẠN VÀO ĐÂY (Không cần chữ @)
+// ==========================================
+const tiktokUsername = "viet1226x"; 
 
-// Mảng lưu trữ các lệnh để gửi cho Roblox
-let actionQueue = [];
+let giftQueue = [];
 
-// Khởi tạo kết nối với luồng Live TikTok
-let tiktokLiveConnection = new WebcastPushConnection(tiktokUsername);
+// ==========================================
+// CÁI ĂNG-TEN: TỰ BẮT SỰ KIỆN TỪ TIKTOK LIVE
+// ==========================================
+const tiktokLiveConnection = new WebcastChat(tiktokUsername);
 
-// Lắng nghe sự kiện tặng quà trên Live
+tiktokLiveConnection.connect().then(state => {
+    console.log(`[OK] Đã kết nối Live của: ${state.roomInfo.owner.uniqueId}`);
+}).catch(err => {
+    console.error('[LỖI] Không thể kết nối. Hãy chắc chắn bạn đang phát Live!', err);
+});
+
 tiktokLiveConnection.on('gift', data => {
-    console.log(`Nhận được quà: ${data.giftName} từ ${data.uniqueId}`);
+    // Bỏ qua nếu đang trong chuỗi combo (chỉ nhận khi combo kết thúc hoặc là quà đơn)
+    if (data.giftType === 1 && !data.repeatEnd) return;
+
+    const giftName = data.giftName;
+    const senderName = data.uniqueId;
+    const amount = data.repeatCount || 1;
+
+    console.log(`[QUÀ TỚI] ${senderName} tặng ${amount}x ${giftName}`);
+
+    let actionCode = null; 
     
-    // Phân loại quà
-    if (data.giftName === 'Rose') {
-        actionQueue.push({ action: "Up5m", user: data.uniqueId });
-    } else if (data.giftName === 'GG') {
-        actionQueue.push({ action: "Down5m", user: data.uniqueId });
-    } else if (data.giftName === 'Paper Crane') {
-        actionQueue.push({ action: "PushBack", user: data.uniqueId });
+    // --- QUÀ TIẾN LÊN ---
+    if (giftName === "Hoa Hồng" || giftName === "Rose") actionCode = "HoaHong";
+    else if (giftName === "Bắn Tim" || giftName === "Finger Heart") actionCode = "BanTim";
+    else if (giftName === "Rosa") actionCode = "Rosa";
+    else if (giftName === "Nước hoa" || giftName === "Perfume") actionCode = "NuocHoa";
+    else if (giftName === "Bánh vòng" || giftName === "Doughnut") actionCode = "BanhVong";
+    else if (giftName === "Thả tim" || giftName === "Heart Me") actionCode = "ThaTim";
+    else if (giftName === "Sao đêm") actionCode = "SaoDem";
+    else if (giftName === "Chó Corgi" || giftName === "Corgi") actionCode = "ChoCorgi";
+    else if (giftName === "Súng bắn tiền") actionCode = "SungBanTien";
+    else if (giftName === "Thiên nga" || giftName === "Swan") actionCode = "ThienNga";
+    else if (giftName === "Thiên hà" || giftName === "Galaxy") actionCode = "ThienHa";
+    else if (giftName === "Cá Voi" || giftName === "Whale") actionCode = "CaVoi";
+
+    // --- QUÀ ĐẨY LÙI ---
+    else if (giftName === "GG") actionCode = "GG";
+    else if (giftName === "Ánh sao tỏa sáng" || giftName === "Shining Star") actionCode = "AnhSao";
+    else if (giftName === "Cỏ bốn lá" || giftName === "Lucky Clover") actionCode = "CoBonLa";
+    else if (giftName === "Hoan hô" || giftName === "Bravo") actionCode = "HoanHo";
+    else if (giftName === "Little Kisses") actionCode = "LittleKisses";
+    else if (giftName === "Mũ và ria mép") actionCode = "MuVaRiaMep";
+    else if (giftName === "Pháo bông que" || giftName === "Sparkler") actionCode = "PhaoBongQue";
+    else if (giftName === "Mèo" || giftName === "Cat") actionCode = "Meo";
+    else if (giftName === "Nàng tiên cá" || giftName === "Mermaid") actionCode = "NangTienCa";
+    else if (giftName === "Sứa phát sáng" || giftName === "Glowing Jellyfish") actionCode = "SuaPhatSang";
+    else if (giftName === "Pháo hoa bí ẩn" || giftName === "Mystery Fireworks") actionCode = "PhaoHoaBiAn";
+
+    // Nếu tên quà khớp với danh sách, bỏ vào kho cho Roblox lấy
+    if (actionCode) {
+        giftQueue.push({
+            action: actionCode,
+            user: senderName,
+            amount: amount
+        });
     }
 });
 
-// --- API 1: ĐƯỜNG DẪN CHO ROBLOX LẤY DỮ LIỆU ---
+// ==========================================
+// CÁI KHO: ROBLOX SẼ GỌI VÀO ĐÂY ĐỂ LẤY QUÀ VỀ
+// ==========================================
 app.get('/api/roblox', (req, res) => {
-    res.json(actionQueue);
-    actionQueue = []; // Xóa hàng đợi sau khi Roblox đã lấy đi để không bị lặp lại
+    res.json(giftQueue);
+    giftQueue = []; // Roblox lấy xong thì dọn sạch kho 
 });
 
-// --- API 2: ĐƯỜNG DẪN TEST DÀNH CHO BẠN ---
-// Truy cập link này trên web để giả lập người xem tặng quà
-app.get('/api/test/:action', (req, res) => {
-    const actionType = req.params.action;
-    
-    if (actionType === 'up') {
-        actionQueue.push({ action: "Up5m", user: "Test_User_VIP" });
-        res.send("Đã giả lập thành công người xem tặng Hoa hồng (Đẩy lên 5m)!");
-    } else if (actionType === 'down') {
-        actionQueue.push({ action: "Down5m", user: "Test_User_VIP" });
-        res.send("Đã giả lập thành công người xem tặng GG (Kéo xuống 5m)!");
-    } else if (actionType === 'back') {
-        actionQueue.push({ action: "PushBack", user: "Test_User_VIP" });
-        res.send("Đã giả lập thành công người xem tặng Hạc giấy (Đẩy lùi 50m)!");
-    } else {
-        res.send("Lỗi: Nhập sai tên lệnh. Hãy thử /api/test/up , /api/test/down , hoặc /api/test/back");
-    }
-});
-
-// --- KHỞI ĐỘNG SERVER ---
-// Chạy server trên Port mặc định của Render
+// Khởi động Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server đang chạy ở port ${PORT}`);
-    
-    // Kết nối vào TikTok
-    tiktokLiveConnection.connect().then(state => {
-        console.log(`Đã kết nối thành công với phiên Live của ${state.roomId}`);
-    }).catch(err => {
-        console.error("Lỗi kết nối TikTok (Có thể bạn chưa bật Live):", err);
-    });
+    console.log(`🚀 Server All-in-One đang chạy trên port ${PORT}`);
 });
