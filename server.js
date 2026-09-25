@@ -12,16 +12,33 @@ const tiktokUsername = "viet1226x";
 let giftQueue = [];
 
 // ==========================================
-// 1. CÁI ĂNG-TEN: TỰ BẮT SỰ KIỆN TỪ TIKTOK LIVE
+// 1. CÁI ĂNG-TEN: TỰ ĐỘNG DÒ TÌM & KẾT NỐI TIKTOK
 // ==========================================
 const tiktokLiveConnection = new WebcastPushConnection(tiktokUsername);
 
-tiktokLiveConnection.connect().then(state => {
-    console.log(`[OK] Đã kết nối Live của: ${state.roomInfo.owner.uniqueId}`);
-}).catch(err => {
-    console.error('[LỖI] Không thể kết nối. Hãy chắc chắn bạn đang phát Live!', err);
+function connectToTikTok() {
+    console.log(`Đang dò tìm luồng Live của [${tiktokUsername}]...`);
+    
+    tiktokLiveConnection.connect().then(state => {
+        console.log(`[OK] Đã kết nối thành công Live của: ${state.roomInfo.owner.uniqueId}`);
+    }).catch(err => {
+        console.error(`[CHỜ LIVE] Chưa thấy kênh Live mở. Tự động quét lại sau 15 giây...`);
+        setTimeout(connectToTikTok, 15000); // Tự động thử lại sau 15 giây
+    });
+}
+
+// Bắt sự kiện khi bạn tắt Live hoặc rớt mạng để tự động quét lại
+tiktokLiveConnection.on('disconnected', () => {
+    console.log('[NGẮT KẾT NỐI] Luồng Live đã tắt hoặc rớt mạng. Chờ Live lại...');
+    setTimeout(connectToTikTok, 15000);
 });
 
+// Kích hoạt ăng-ten
+connectToTikTok();
+
+// ==========================================
+// XỬ LÝ KHI CÓ NGƯỜI TẶNG QUÀ
+// ==========================================
 tiktokLiveConnection.on('gift', data => {
     if (data.giftType === 1 && !data.repeatEnd) return;
 
@@ -60,7 +77,7 @@ tiktokLiveConnection.on('gift', data => {
     else if (giftName === "Sứa phát sáng" || giftName === "Sứa Phát Sáng" || giftName === "Glowing Jellyfish") actionCode = "SuaPhatSang";
     else if (giftName === "Pháo hoa bí ẩn" || giftName === "Pháo Hoa Bí Ẩn" || giftName === "Mystery Fireworks") actionCode = "PhaoHoaBiAn";
 
-    // [QUAN TRỌNG] ĐÂY LÀ ĐOẠN BẠN LỠ XÓA MẤT TRONG CODE CŨ:
+    // Đẩy quà vào kho cho Roblox lấy
     if (actionCode) {
         giftQueue.push({ action: actionCode, user: senderName, amount: amount });
     }
