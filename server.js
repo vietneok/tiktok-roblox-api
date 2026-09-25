@@ -1,5 +1,5 @@
 const express = require('express');
-const { WebcastPushConnection } = require('tiktok-live-connector'); // <-- Đã sửa lỗi ở đây
+const { WebcastPushConnection } = require('tiktok-live-connector');
 
 const app = express();
 app.use(express.json());
@@ -14,7 +14,7 @@ let giftQueue = [];
 // ==========================================
 // 1. CÁI ĂNG-TEN: TỰ BẮT SỰ KIỆN TỪ TIKTOK LIVE
 // ==========================================
-const tiktokLiveConnection = new WebcastPushConnection(tiktokUsername); // <-- Đã sửa lỗi ở đây
+const tiktokLiveConnection = new WebcastPushConnection(tiktokUsername);
 
 tiktokLiveConnection.connect().then(state => {
     console.log(`[OK] Đã kết nối Live của: ${state.roomInfo.owner.uniqueId}`);
@@ -34,32 +34,33 @@ tiktokLiveConnection.on('gift', data => {
     let actionCode = null; 
     
     // --- QUÀ TIẾN LÊN ---
-    if (giftName === "Hoa Hồng" || giftName === "Rose") actionCode = "HoaHong";
-    else if (giftName === "Bắn Tim" || giftName === "Finger Heart") actionCode = "BanTim";
+    if (giftName === "Hoa Hồng" || giftName === "Hoa hồng" || giftName === "Rose") actionCode = "HoaHong";
+    else if (giftName === "Bắn Tim" || giftName === "Bắn tim" || giftName === "Finger Heart") actionCode = "BanTim";
     else if (giftName === "Rosa") actionCode = "Rosa";
-    else if (giftName === "Nước hoa" || giftName === "Perfume") actionCode = "NuocHoa";
-    else if (giftName === "Bánh vòng" || giftName === "Doughnut") actionCode = "BanhVong";
-    else if (giftName === "Thả tim" || giftName === "Heart Me") actionCode = "ThaTim";
-    else if (giftName === "Sao đêm") actionCode = "SaoDem";
+    else if (giftName === "Nước hoa" || giftName === "Nước Hoa" || giftName === "Perfume") actionCode = "NuocHoa";
+    else if (giftName === "Bánh vòng" || giftName === "Bánh Vòng" || giftName === "Doughnut") actionCode = "BanhVong";
+    else if (giftName === "Thả tim" || giftName === "Thả Tim" || giftName === "Heart Me") actionCode = "ThaTim";
+    else if (giftName === "Sao đêm" || giftName === "Sao Đêm") actionCode = "SaoDem";
     else if (giftName === "Chó Corgi" || giftName === "Corgi") actionCode = "ChoCorgi";
-    else if (giftName === "Súng bắn tiền") actionCode = "SungBanTien";
-    else if (giftName === "Thiên nga" || giftName === "Swan") actionCode = "ThienNga";
-    else if (giftName === "Thiên hà" || giftName === "Galaxy") actionCode = "ThienHa";
-    else if (giftName === "Cá Voi" || giftName === "Whale") actionCode = "CaVoi";
+    else if (giftName === "Súng bắn tiền" || giftName === "Súng Bắn Tiền") actionCode = "SungBanTien";
+    else if (giftName === "Thiên nga" || giftName === "Thiên Nga" || giftName === "Swan") actionCode = "ThienNga";
+    else if (giftName === "Thiên hà" || giftName === "Thiên Hà" || giftName === "Galaxy") actionCode = "ThienHa";
+    else if (giftName === "Cá Voi" || giftName === "Cá voi" || giftName === "Whale") actionCode = "CaVoi";
 
     // --- QUÀ ĐẨY LÙI ---
     else if (giftName === "GG") actionCode = "GG";
-    else if (giftName === "Ánh sao tỏa sáng" || giftName === "Shining Star") actionCode = "AnhSao";
+    else if (giftName === "Ánh sao tỏa sáng" || giftName === "Ánh sao" || giftName === "Shining Star") actionCode = "AnhSao";
     else if (giftName === "Cỏ bốn lá" || giftName === "Lucky Clover") actionCode = "CoBonLa";
     else if (giftName === "Hoan hô" || giftName === "Bravo") actionCode = "HoanHo";
     else if (giftName === "Little Kisses") actionCode = "LittleKisses";
-    else if (giftName === "Mũ và ria mép") actionCode = "MuVaRiaMep";
-    else if (giftName === "Pháo bông que" || giftName === "Sparkler") actionCode = "PhaoBongQue";
+    else if (giftName === "Mũ và ria mép" || giftName === "Mũ và Ria mép") actionCode = "MuVaRiaMep";
+    else if (giftName === "Pháo bông que" || giftName === "Pháo Bông Que" || giftName === "Sparkler") actionCode = "PhaoBongQue";
     else if (giftName === "Mèo" || giftName === "Cat") actionCode = "Meo";
-    else if (giftName === "Nàng tiên cá" || giftName === "Mermaid") actionCode = "NangTienCa";
-    else if (giftName === "Sứa phát sáng" || giftName === "Glowing Jellyfish") actionCode = "SuaPhatSang";
-    else if (giftName === "Pháo hoa bí ẩn" || giftName === "Mystery Fireworks") actionCode = "PhaoHoaBiAn";
+    else if (giftName === "Nàng tiên cá" || giftName === "Nàng Tiên Cá" || giftName === "Mermaid") actionCode = "NangTienCa";
+    else if (giftName === "Sứa phát sáng" || giftName === "Sứa Phát Sáng" || giftName === "Glowing Jellyfish") actionCode = "SuaPhatSang";
+    else if (giftName === "Pháo hoa bí ẩn" || giftName === "Pháo Hoa Bí Ẩn" || giftName === "Mystery Fireworks") actionCode = "PhaoHoaBiAn";
 
+    // [QUAN TRỌNG] ĐÂY LÀ ĐOẠN BẠN LỠ XÓA MẤT TRONG CODE CŨ:
     if (actionCode) {
         giftQueue.push({ action: actionCode, user: senderName, amount: amount });
     }
