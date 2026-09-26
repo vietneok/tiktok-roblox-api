@@ -51,8 +51,8 @@ const BANG_QUA = [
     { ma: "GG",          ten: "GG",               xu: 1 },     // -120m
     { ma: "AnhSao",      ten: "Ice cream",        xu: 5 },     // -220m
     { ma: "CoBonLa",     ten: "Lucky Pig",        xu: 10 },    // -520m
-    { ma: "HoanHo",      ten: "little kisses",    xu: 20 },    // -800m
-    { ma: "LittleKisses",ten: "Flight Ticket",    xu: 30 },    // -1.05km
+    { ma: "HoanHo",      ten: "Bravo!",           xu: 15 },    // -800m
+    { ma: "LittleKisses",ten: "little kisses",    xu: 20 },    // -1.05km
     { ma: "MuVaRiaMep",  ten: "Hat and Mustache", xu: 99 },    // -2.05km
     { ma: "PhaoBongQue", ten: "Side by Side",     xu: 199 },   // -5.05km
     { ma: "Meo",         ten: "Boxing Gloves",    xu: 299 },   // -10.05km
