@@ -23,30 +23,41 @@ const GIFT_MAP = {
     "Rosa": "Rosa",
     "Perfume": "NuocHoa", "Nước hoa": "NuocHoa", "Nước Hoa": "NuocHoa",
     "Doughnut": "BanhVong", "Bánh vòng": "BanhVong", "Bánh Vòng": "BanhVong",
-    "Thả tim": "ThaTim", "Thả Tim": "ThaTim", // [SỬA] bỏ "Heart Me" (quà 1 xu, bị map nhầm). Thêm tên tiếng Anh đúng sau khi xem /gifts
-    "Sao đêm": "SaoDem", "Sao Đêm": "SaoDem",
+    "Hand Heart": "ThaTim", "Hand Hearts": "ThaTim", "Thả tim": "ThaTim", "Thả Tim": "ThaTim", // [SỬA] quà 100 xu tên thật là "Hand Heart" (bỏ "Heart Me" 1 xu)
+    "Night Star": "SaoDem", "Sao đêm": "SaoDem", "Sao Đêm": "SaoDem", // [SỬA] tên thật "Night Star" (199 xu, #13166)
     "Corgi": "ChoCorgi", "Chó Corgi": "ChoCorgi",
     "Money Gun": "SungBanTien", "Súng bắn tiền": "SungBanTien", "Súng Bắn Tiền": "SungBanTien",
     "Swan": "ThienNga", "Thiên nga": "ThienNga", "Thiên Nga": "ThienNga",
     "Galaxy": "ThienHa", "Thiên hà": "ThienHa", "Thiên Hà": "ThienHa",
-    "Whale": "CaVoi", "Cá Voi": "CaVoi", "Cá voi": "CaVoi",
+    "Whale Diving": "CaVoi", "Whale": "CaVoi", "Cá Voi": "CaVoi", "Cá voi": "CaVoi", // [SỬA] tên thật là "Whale Diving" (2150 xu)
 
     // --- QUÀ ĐẨY LÙI ---
     "GG": "GG",
     "Shining Star": "AnhSao", "Ánh sao tỏa sáng": "AnhSao", "Ánh sao": "AnhSao",
     "Lucky Clover": "CoBonLa", "Cỏ bốn lá": "CoBonLa",
-    "Bravo": "HoanHo", "Hoan hô": "HoanHo",
-    "Little Kisses": "LittleKisses",
+    "Bravo!": "HoanHo", "Bravo": "HoanHo", "Hoan hô": "HoanHo", // tên thật có dấu "!"
+    "little kisses": "LittleKisses", // TikTok ghi chữ thường
     "Hat and Mustache": "MuVaRiaMep", "Mũ và ria mép": "MuVaRiaMep", "Mũ và Ria mép": "MuVaRiaMep",
-    "Sparkler": "PhaoBongQue", "Pháo bông que": "PhaoBongQue", "Pháo Bông Que": "PhaoBongQue",
+    "Sparklers": "PhaoBongQue", "Sparkler": "PhaoBongQue", "Pháo bông que": "PhaoBongQue", "Pháo Bông Que": "PhaoBongQue", // tên thật "Sparklers"
     "Cat": "Meo", "Mèo": "Meo",
     "Mermaid": "NangTienCa", "Nàng tiên cá": "NangTienCa", "Nàng Tiên Cá": "NangTienCa",
     "Glowing Jellyfish": "SuaPhatSang", "Sứa phát sáng": "SuaPhatSang", "Sứa Phát Sáng": "SuaPhatSang",
-    "Mystery Fireworks": "PhaoHoaBiAn", "Pháo hoa bí ẩn": "PhaoHoaBiAn", "Pháo Hoa Bí Ẩn": "PhaoHoaBiAn",
+    "Mystery Firework": "PhaoHoaBiAn", "Mystery Fireworks": "PhaoHoaBiAn", "Pháo hoa bí ẩn": "PhaoHoaBiAn", "Pháo Hoa Bí Ẩn": "PhaoHoaBiAn", // tên thật "Mystery Firework"
 };
 
 // Danh sách mã thử thách (để làm nút test trên trang /gifts)
 const ALL_ACTIONS = [...new Set(Object.values(GIFT_MAP))];
+
+// [MỚI] So tên quà KHÔNG phân biệt hoa/thường và bỏ qua dấu câu
+// ("Bravo!" = "bravo", "Little Kisses" = "little kisses")
+function chuanHoaTen(ten) {
+    return String(ten || '').normalize('NFC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+}
+const GIFT_MAP_CHUAN = {};
+for (const [ten, ma] of Object.entries(GIFT_MAP)) GIFT_MAP_CHUAN[chuanHoaTen(ten)] = ma;
+function timMaQua(tenQua) {
+    return GIFT_MAP_CHUAN[chuanHoaTen(tenQua)] || null;
+}
 
 // [MỚI] Ghi lại trạng thái để bạn mở link Render là xem được ngay
 let tiktokStatus = "Chưa kết nối";
@@ -129,7 +140,7 @@ tiktokLiveConnection.on(WebcastEvent.GIFT, data => {
     console.log(`[QUÀ TỚI] ${senderName} tặng ${amount}x ${giftName} (id ${data.giftId})`);
 
     // Tra tên quà trong bảng GIFT_MAP (ở cuối phần cài đặt phía trên)
-    const actionCode = GIFT_MAP[giftName] || null;
+    const actionCode = timMaQua(giftName);
 
     // Đẩy quà vào kho cho Roblox lấy
     if (actionCode) {
@@ -180,6 +191,17 @@ function escapeHtml(t) {
     return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// [MỚI] Lấy danh sách quà thẳng từ TikTok (cách miễn phí, không cần gói trả phí của Euler)
+async function layDanhSachQua() {
+    const roomId = tiktokLiveConnection.roomId;
+    if (!roomId) throw new Error('Chưa kết nối được phòng live');
+    const wc = tiktokLiveConnection.webClient;
+    const body = await wc.getJsonObjectFromWebcastApi('gift/list/', { ...wc.clientParams, room_id: roomId }, false);
+    const gifts = body && body.data && body.data.gifts;
+    if (Array.isArray(gifts) && gifts.length > 0) return gifts;
+    throw new Error('TikTok không trả về danh sách quà');
+}
+
 app.get('/gifts', async (req, res) => {
     // Phần 1: nút test từng thử thách (không tốn xu)
     const buttons = ["Follow", ...ALL_ACTIONS].map(a =>
@@ -189,7 +211,7 @@ app.get('/gifts', async (req, res) => {
     // Phần 2: danh sách quà thật của TikTok (cần đang live)
     let giftTable = '';
     try {
-        const gifts = await tiktokLiveConnection.fetchAvailableGifts();
+        const gifts = await layDanhSachQua();
         const list = (Array.isArray(gifts) ? gifts : [])
             .map(g => ({
                 name: g.name || '',
@@ -202,7 +224,7 @@ app.get('/gifts', async (req, res) => {
             .sort((a, b) => a.coins - b.coins);
 
         const rows = list.map(g => {
-            const code = GIFT_MAP[g.name];
+            const code = timMaQua(g.name);
             const status = code ? `✅ ${code}` : '—';
             const bg = code ? '#e8f8e8' : '#fff';
             const imgTag = g.img ? `<img src="${escapeHtml(g.img)}" width="48" height="48" referrerpolicy="no-referrer" loading="lazy">` : '';
@@ -214,8 +236,10 @@ app.get('/gifts', async (req, res) => {
             <table border="1" cellpadding="6" style="border-collapse:collapse">
             <tr><th>Ảnh</th><th>Tên quà (TikTok gửi về)</th><th>Xu</th><th>Mã thử thách</th><th>ID</th></tr>${rows}</table>`;
     } catch (err) {
-        giftTable = `<p>⚠️ Chưa lấy được danh sách quà. Bạn cần <b>đang live</b> và trang chủ báo <b>ĐÃ KẾT NỐI</b>.</p>
-            <p>Lý do: ${escapeHtml(err && err.message ? err.message : err)}</p>`;
+        giftTable = `<p>⚠️ Chưa lấy được danh sách quà từ TikTok (cần <b>đang live</b> và trang chủ báo <b>ĐÃ KẾT NỐI</b>).</p>
+            <p>Lý do: ${escapeHtml(err && err.message ? err.message : err)}</p>
+            <p>👉 Cách khác (miễn phí): mở <a href="https://www.eulerstream.com/tools/tiktok-gifts-calculator" target="_blank">bảng quà TikTok của Euler Stream</a>,
+            tìm quà theo <b>ảnh + số xu</b>, rồi lấy <b>tên tiếng Anh</b> ghi dưới ảnh.</p>`;
     }
 
     res.send(`<meta name="viewport" content="width=device-width, initial-scale=1">
