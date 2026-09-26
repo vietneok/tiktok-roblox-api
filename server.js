@@ -23,7 +23,7 @@ const GIFT_MAP = {
     "Rosa": "Rosa",
     "Perfume": "NuocHoa", "Nước hoa": "NuocHoa", "Nước Hoa": "NuocHoa",
     "Doughnut": "BanhVong", "Bánh vòng": "BanhVong", "Bánh Vòng": "BanhVong",
-    "Heart Me": "ThaTim", "Thả tim": "ThaTim", "Thả Tim": "ThaTim",
+    "Thả tim": "ThaTim", "Thả Tim": "ThaTim", // [SỬA] bỏ "Heart Me" (quà 1 xu, bị map nhầm). Thêm tên tiếng Anh đúng sau khi xem /gifts
     "Sao đêm": "SaoDem", "Sao Đêm": "SaoDem",
     "Corgi": "ChoCorgi", "Chó Corgi": "ChoCorgi",
     "Money Gun": "SungBanTien", "Súng bắn tiền": "SungBanTien", "Súng Bắn Tiền": "SungBanTien",
@@ -191,19 +191,28 @@ app.get('/gifts', async (req, res) => {
     try {
         const gifts = await tiktokLiveConnection.fetchAvailableGifts();
         const list = (Array.isArray(gifts) ? gifts : [])
-            .map(g => ({ name: g.name || '', coins: g.diamond_count || 0, id: g.id }))
+            .map(g => ({
+                name: g.name || '',
+                coins: g.diamond_count || 0,
+                id: g.id,
+                // [MỚI] ảnh quà để nhận ra quà giống như trong app TikTok
+                img: (g.image && g.image.url_list && g.image.url_list[0])
+                    || (g.icon && g.icon.url_list && g.icon.url_list[0]) || ''
+            }))
             .sort((a, b) => a.coins - b.coins);
 
         const rows = list.map(g => {
             const code = GIFT_MAP[g.name];
             const status = code ? `✅ ${code}` : '—';
             const bg = code ? '#e8f8e8' : '#fff';
-            return `<tr style="background:${bg}"><td>${escapeHtml(g.name)}</td><td>${g.coins}</td><td>${status}</td><td>${g.id}</td></tr>`;
+            const imgTag = g.img ? `<img src="${escapeHtml(g.img)}" width="48" height="48" referrerpolicy="no-referrer" loading="lazy">` : '';
+            return `<tr style="background:${bg}"><td>${imgTag}</td><td>${escapeHtml(g.name)}</td><td>${g.coins}</td><td>${status}</td><td>${g.id}</td></tr>`;
         }).join('');
 
-        giftTable = `<p>Có ${list.length} quà. Dòng xanh là quà đã có trong bảng.</p>
+        giftTable = `<p>Có ${list.length} quà, xếp từ rẻ đến đắt. <b>Dòng xanh</b> là quà đã có trong bảng.</p>
+            <p>Tìm quà theo <b>ảnh + số xu</b>, rồi xem cột "Tên quà" để biết tên chính xác TikTok gửi về.</p>
             <table border="1" cellpadding="6" style="border-collapse:collapse">
-            <tr><th>Tên quà (TikTok gửi về)</th><th>Xu</th><th>Mã thử thách</th><th>ID</th></tr>${rows}</table>`;
+            <tr><th>Ảnh</th><th>Tên quà (TikTok gửi về)</th><th>Xu</th><th>Mã thử thách</th><th>ID</th></tr>${rows}</table>`;
     } catch (err) {
         giftTable = `<p>⚠️ Chưa lấy được danh sách quà. Bạn cần <b>đang live</b> và trang chủ báo <b>ĐÃ KẾT NỐI</b>.</p>
             <p>Lý do: ${escapeHtml(err && err.message ? err.message : err)}</p>`;
