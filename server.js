@@ -12,6 +12,17 @@ const tiktokUsername = "viet1226x";
 
 let giftQueue = [];
 
+const followedThisSession = new Set(); // mỗi người chỉ tính 1 lần/buổi live (chống follow-unfollow spam)
+// (danh sách này được xóa mỗi khi kết nối được buổi live mới, xem connectToTikTok)
+
+// [TỐI ƯU] Kho quà chờ Roblox lấy có giới hạn: lỡ game chưa mở mà quà dồn quá nhiều
+// thì bỏ bớt quà CŨ NHẤT, tránh lúc mở game bị "xả" cả đống quà cũ một lúc.
+const KHO_TOI_DA = 300;
+function dayVaoKho(item) {
+    giftQueue.push(item);
+    if (giftQueue.length > KHO_TOI_DA) giftQueue.splice(0, giftQueue.length - KHO_TOI_DA);
+}
+
 // ==========================================
 // BẢNG QUÀ: Tên quà TikTok (tiếng Anh) + giá xu  →  Mã thử thách trong Roblox
 // Mã thử thách giữ nguyên theo từng mốc mét (vì model trong game đặt tên theo mã).
@@ -107,6 +118,7 @@ function connectToTikTok() {
     tiktokLiveConnection.connect().then(state => {
         tiktokStatus = "ĐÃ KẾT NỐI";
         lastError = "";
+        followedThisSession.clear(); // [TỐI ƯU] buổi live mới: ai follow cũng được tính lại
         console.log(`[OK] Đã kết nối thành công Live của: ${tiktokUsername} (phòng ${state.roomId})`);
     }).catch(err => {
         // [MỚI] In ra LÝ DO lỗi thật, trước đây bị giấu mất
@@ -155,7 +167,7 @@ tiktokLiveConnection.on(WebcastEvent.GIFT, data => {
     const giftName = giftInfo.name || giftInfo.giftName || "";
     const user = data.user || {};
     const senderName = user.uniqueId || user.displayId || user.nickname || "Ẩn danh";
-    const displayName = user.nickname || senderName; // [MỚI] tên hiển thị TikTok (ai cũng tự đặt được)
+    const displayName = user.nickname || ""; // tên hiển thị TikTok; trống thì Roblox tự hiện @ID
     const amount = data.repeatCount || 1;
     const giftCoins = giftInfo.diamondCount || giftInfo.diamond_count || 0; // giá thật của quà (xu)
 
@@ -166,7 +178,7 @@ tiktokLiveConnection.on(WebcastEvent.GIFT, data => {
 
     // Đẩy quà vào kho cho Roblox lấy
     if (qua) {
-        giftQueue.push({ action: qua.ma, user: senderName, name: displayName, amount: amount, gift: giftName });
+        dayVaoKho({ action: qua.ma, user: senderName, name: displayName, amount: amount, gift: giftName });
         lastGift = `${senderName} tặng ${amount}x ${giftName} → ${qua.ma}`;
     } else {
         console.log(`[QUÀ KHÔNG TÍNH] "${giftName}" (${giftCoins} xu, id ${data.giftId}): ${lyDo}`);
@@ -177,18 +189,17 @@ tiktokLiveConnection.on(WebcastEvent.GIFT, data => {
 // ==========================================
 // [MỚI] XỬ LÝ KHI CÓ NGƯỜI FOLLOW
 // ==========================================
-const followedThisSession = new Set(); // mỗi người chỉ tính 1 lần/buổi live (chống follow-unfollow spam)
 
 tiktokLiveConnection.on(WebcastEvent.FOLLOW, data => {
     const user = data.user || {};
     const senderName = user.uniqueId || user.displayId || user.nickname || "Ẩn danh";
-    const displayName = user.nickname || senderName;
+    const displayName = user.nickname || ""; // trống thì Roblox tự hiện @ID
 
     if (followedThisSession.has(senderName)) return;
     followedThisSession.add(senderName);
 
     console.log(`[FOLLOW] ${displayName} (@${senderName}) vừa follow`);
-    giftQueue.push({ action: "Follow", user: senderName, name: displayName, amount: 1 });
+    dayVaoKho({ action: "Follow", user: senderName, name: displayName, amount: 1 });
 });
 
 // ==========================================
@@ -292,7 +303,7 @@ app.get('/test', (req, res) => {
 
     const giftName = req.query.gift || tenQuaTheoMa(actionCode);
 
-    giftQueue.push({ action: actionCode, user: senderName, name: displayName, amount: amount, gift: giftName });
+    dayVaoKho({ action: actionCode, user: senderName, name: displayName, amount: amount, gift: giftName });
     res.send(`✅ Đã giả lập thành công! [${senderName}] vừa tặng ${amount}x [${giftName} → ${actionCode}]. Hãy vào Roblox để xem nhân vật bơi nhé!`);
 });
 
