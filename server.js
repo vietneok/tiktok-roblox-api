@@ -123,6 +123,7 @@ tiktokLiveConnection.on(WebcastEvent.GIFT, data => {
     const giftName = giftInfo.name || giftInfo.giftName || "";
     const user = data.user || {};
     const senderName = user.uniqueId || user.displayId || user.nickname || "Ẩn danh";
+    const displayName = user.nickname || senderName; // [MỚI] tên hiển thị TikTok (ai cũng tự đặt được)
     const amount = data.repeatCount || 1;
 
     console.log(`[QUÀ TỚI] ${senderName} tặng ${amount}x ${giftName} (id ${data.giftId})`);
@@ -132,13 +133,30 @@ tiktokLiveConnection.on(WebcastEvent.GIFT, data => {
 
     // Đẩy quà vào kho cho Roblox lấy
     if (actionCode) {
-        giftQueue.push({ action: actionCode, user: senderName, amount: amount });
+        giftQueue.push({ action: actionCode, user: senderName, name: displayName, amount: amount });
         lastGift = `${senderName} tặng ${amount}x ${giftName} → ${actionCode}`;
     } else {
         // [MỚI] Quà có tên chưa khớp bảng: trước đây bị bỏ qua im lặng
         console.log(`[QUÀ CHƯA CÓ TRONG BẢNG] Tên TikTok gửi về là: "${giftName}" (id ${data.giftId})`);
         lastGift = `CHƯA KHỚP BẢNG: "${giftName}" từ ${senderName}`;
     }
+});
+
+// ==========================================
+// [MỚI] XỬ LÝ KHI CÓ NGƯỜI FOLLOW
+// ==========================================
+const followedThisSession = new Set(); // mỗi người chỉ tính 1 lần/buổi live (chống follow-unfollow spam)
+
+tiktokLiveConnection.on(WebcastEvent.FOLLOW, data => {
+    const user = data.user || {};
+    const senderName = user.uniqueId || user.displayId || user.nickname || "Ẩn danh";
+    const displayName = user.nickname || senderName;
+
+    if (followedThisSession.has(senderName)) return;
+    followedThisSession.add(senderName);
+
+    console.log(`[FOLLOW] ${displayName} (@${senderName}) vừa follow`);
+    giftQueue.push({ action: "Follow", user: senderName, name: displayName, amount: 1 });
 });
 
 // ==========================================
@@ -164,7 +182,7 @@ function escapeHtml(t) {
 
 app.get('/gifts', async (req, res) => {
     // Phần 1: nút test từng thử thách (không tốn xu)
-    const buttons = ALL_ACTIONS.map(a =>
+    const buttons = ["Follow", ...ALL_ACTIONS].map(a =>
         `<a href="/test?action=${a}" target="_blank" style="display:inline-block;margin:4px;padding:8px 12px;background:#eee;border-radius:6px;text-decoration:none">${a}</a>`
     ).join('');
 
@@ -195,6 +213,8 @@ app.get('/gifts', async (req, res) => {
         <h2>🎁 Test quà miễn phí</h2>
         <p>Vào game trên điện thoại trước, rồi bấm nút bất kỳ:</p>
         <div>${buttons}</div>
+        <p>Thử tên dài: <a href="/test?action=Follow&user=test_ten_dai&name=${encodeURIComponent('Nguyễn Văn Siêu Dài Ơi Là Dài 🌸')}" target="_blank">Follow tên dài</a>
+         · <a href="/test?action=CaVoi&amount=10&user=test_ten_dai2&name=${encodeURIComponent('Người Xem Có Cái Tên Rất Là Dài')}" target="_blank">Cá Voi x10 tên dài</a></p>
         <h2>📋 Danh sách quà thật của TikTok</h2>
         ${giftTable}`);
 });
@@ -213,9 +233,10 @@ app.get('/api/roblox', (req, res) => {
 app.get('/test', (req, res) => {
     const actionCode = req.query.action || "HoaHong";
     const senderName = req.query.user || "Người_Test_Web";
+    const displayName = req.query.name || senderName;
     const amount = parseInt(req.query.amount) || 1;
 
-    giftQueue.push({ action: actionCode, user: senderName, amount: amount });
+    giftQueue.push({ action: actionCode, user: senderName, name: displayName, amount: amount });
     res.send(`✅ Đã giả lập thành công! [${senderName}] vừa tặng ${amount}x [${actionCode}]. Hãy vào Roblox để xem nhân vật bơi nhé!`);
 });
 
