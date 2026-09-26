@@ -1,5 +1,6 @@
 const express = require('express');
-const { WebcastPushConnection } = require('tiktok-live-connector');
+// [MỚI] Thư viện bản 2: dùng chế độ "legacy" để giữ nguyên cách viết cũ
+const { WebcastPushConnection } = require('tiktok-live-connector/legacy');
 
 const app = express();
 app.use(express.json());
@@ -19,7 +20,7 @@ let lastGift = "Chưa có";
 // ==========================================
 // 1. CÁI ĂNG-TEN: TỰ ĐỘNG DÒ TÌM & KẾT NỐI TIKTOK
 // ==========================================
-const tiktokLiveConnection = new WebcastPushConnection(tiktokUsername);
+const tiktokLiveConnection = new WebcastPushConnection(tiktokUsername, {});
 
 // [MỚI] Chỉ hẹn giờ kết nối lại 1 lần, tránh bị kết nối chồng 2 lần
 let reconnectTimer = null;
@@ -38,7 +39,7 @@ function connectToTikTok() {
     tiktokLiveConnection.connect().then(state => {
         tiktokStatus = "ĐÃ KẾT NỐI";
         lastError = "";
-        console.log(`[OK] Đã kết nối thành công Live của: ${state.roomInfo.owner.uniqueId}`);
+        console.log(`[OK] Đã kết nối thành công Live của: ${tiktokUsername} (phòng ${state.roomId})`);
     }).catch(err => {
         // [MỚI] In ra LÝ DO lỗi thật, trước đây bị giấu mất
         lastError = (err && err.message) ? err.message : String(err);
@@ -53,6 +54,12 @@ tiktokLiveConnection.on('disconnected', () => {
     tiktokStatus = "Mất kết nối";
     console.log('[NGẮT KẾT NỐI] Luồng Live đã tắt hoặc rớt mạng. Chờ Live lại...');
     scheduleReconnect();
+});
+
+// [MỚI] Bắt lỗi chung, tránh server bị sập khi TikTok trả lỗi lạ
+tiktokLiveConnection.on('error', err => {
+    lastError = (err && err.info) ? err.info : String(err && err.message ? err.message : err);
+    console.error('[LỖI TIKTOK]', lastError);
 });
 
 // Kích hoạt ăng-ten
