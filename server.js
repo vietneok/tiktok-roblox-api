@@ -1,6 +1,6 @@
 const express = require('express');
-// [MỚI] Thư viện bản 2: dùng chế độ "legacy" để giữ nguyên cách viết cũ
-const { WebcastPushConnection } = require('tiktok-live-connector/legacy');
+// [SỬA] Dùng cách kết nối CHÍNH của thư viện bản 2 (chế độ "legacy" bị lỗi làm sập server)
+const { TikTokLiveConnection, WebcastEvent, ControlEvent } = require('tiktok-live-connector');
 
 const app = express();
 app.use(express.json());
@@ -20,7 +20,7 @@ let lastGift = "Chưa có";
 // ==========================================
 // 1. CÁI ĂNG-TEN: TỰ ĐỘNG DÒ TÌM & KẾT NỐI TIKTOK
 // ==========================================
-const tiktokLiveConnection = new WebcastPushConnection(tiktokUsername, {});
+const tiktokLiveConnection = new TikTokLiveConnection(tiktokUsername, {});
 
 // [MỚI] Chỉ hẹn giờ kết nối lại 1 lần, tránh bị kết nối chồng 2 lần
 let reconnectTimer = null;
@@ -50,16 +50,26 @@ function connectToTikTok() {
 }
 
 // Bắt sự kiện khi bạn tắt Live hoặc rớt mạng để tự động quét lại
-tiktokLiveConnection.on('disconnected', () => {
+tiktokLiveConnection.on(ControlEvent.DISCONNECTED, () => {
     tiktokStatus = "Mất kết nối";
     console.log('[NGẮT KẾT NỐI] Luồng Live đã tắt hoặc rớt mạng. Chờ Live lại...');
     scheduleReconnect();
 });
 
 // [MỚI] Bắt lỗi chung, tránh server bị sập khi TikTok trả lỗi lạ
-tiktokLiveConnection.on('error', err => {
-    lastError = (err && err.info) ? err.info : String(err && err.message ? err.message : err);
-    console.error('[LỖI TIKTOK]', lastError);
+tiktokLiveConnection.on(ControlEvent.ERROR, err => {
+    const info = (err && err.info) ? err.info : '';
+    const detail = (err && err.exception && err.exception.message) ? err.exception.message : '';
+    console.error('[LỖI TIKTOK]', info, detail);
+});
+
+// [MỚI] Lưới an toàn: có lỗi lạ thì ghi lại chứ KHÔNG để server sập
+process.on('uncaughtException', err => {
+    lastError = 'Lỗi lạ: ' + (err && err.message ? err.message : String(err));
+    console.error('[LỖI LẠ - ĐÃ CHẶN]', err);
+});
+process.on('unhandledRejection', err => {
+    console.error('[LỖI LẠ - ĐÃ CHẶN]', err);
 });
 
 // Kích hoạt ăng-ten
@@ -68,11 +78,15 @@ connectToTikTok();
 // ==========================================
 // XỬ LÝ KHI CÓ NGƯỜI TẶNG QUÀ
 // ==========================================
-tiktokLiveConnection.on('gift', data => {
-    if (data.giftType === 1 && !data.repeatEnd) return;
+tiktokLiveConnection.on(WebcastEvent.GIFT, data => {
+    // [SỬA] Bản 2 để thông tin quà trong data.gift, người tặng trong data.user
+    const giftInfo = data.gift || data.giftDetails || {};
+    const giftType = (giftInfo.type !== undefined) ? giftInfo.type : giftInfo.giftType;
+    if (giftType === 1 && !data.repeatEnd) return; // quà combo chưa bấm xong thì đợi
 
-    const giftName = data.giftName;
-    const senderName = data.uniqueId;
+    const giftName = giftInfo.name || giftInfo.giftName || "";
+    const user = data.user || {};
+    const senderName = user.uniqueId || user.displayId || user.nickname || "Ẩn danh";
     const amount = data.repeatCount || 1;
 
     console.log(`[QUÀ TỚI] ${senderName} tặng ${amount}x ${giftName} (id ${data.giftId})`);
