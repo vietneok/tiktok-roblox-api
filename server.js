@@ -12,6 +12,42 @@ const tiktokUsername = "viet1226x";
 
 let giftQueue = [];
 
+// ==========================================
+// BẢNG QUÀ: Tên quà TikTok  →  Mã thử thách trong Roblox
+// (Muốn thêm quà: thêm 1 dòng theo đúng mẫu)
+// ==========================================
+const GIFT_MAP = {
+    // --- QUÀ TIẾN LÊN ---
+    "Rose": "HoaHong", "Hoa Hồng": "HoaHong", "Hoa hồng": "HoaHong",
+    "Finger Heart": "BanTim", "Bắn Tim": "BanTim", "Bắn tim": "BanTim",
+    "Rosa": "Rosa",
+    "Perfume": "NuocHoa", "Nước hoa": "NuocHoa", "Nước Hoa": "NuocHoa",
+    "Doughnut": "BanhVong", "Bánh vòng": "BanhVong", "Bánh Vòng": "BanhVong",
+    "Heart Me": "ThaTim", "Thả tim": "ThaTim", "Thả Tim": "ThaTim",
+    "Sao đêm": "SaoDem", "Sao Đêm": "SaoDem",
+    "Corgi": "ChoCorgi", "Chó Corgi": "ChoCorgi",
+    "Money Gun": "SungBanTien", "Súng bắn tiền": "SungBanTien", "Súng Bắn Tiền": "SungBanTien",
+    "Swan": "ThienNga", "Thiên nga": "ThienNga", "Thiên Nga": "ThienNga",
+    "Galaxy": "ThienHa", "Thiên hà": "ThienHa", "Thiên Hà": "ThienHa",
+    "Whale": "CaVoi", "Cá Voi": "CaVoi", "Cá voi": "CaVoi",
+
+    // --- QUÀ ĐẨY LÙI ---
+    "GG": "GG",
+    "Shining Star": "AnhSao", "Ánh sao tỏa sáng": "AnhSao", "Ánh sao": "AnhSao",
+    "Lucky Clover": "CoBonLa", "Cỏ bốn lá": "CoBonLa",
+    "Bravo": "HoanHo", "Hoan hô": "HoanHo",
+    "Little Kisses": "LittleKisses",
+    "Hat and Mustache": "MuVaRiaMep", "Mũ và ria mép": "MuVaRiaMep", "Mũ và Ria mép": "MuVaRiaMep",
+    "Sparkler": "PhaoBongQue", "Pháo bông que": "PhaoBongQue", "Pháo Bông Que": "PhaoBongQue",
+    "Cat": "Meo", "Mèo": "Meo",
+    "Mermaid": "NangTienCa", "Nàng tiên cá": "NangTienCa", "Nàng Tiên Cá": "NangTienCa",
+    "Glowing Jellyfish": "SuaPhatSang", "Sứa phát sáng": "SuaPhatSang", "Sứa Phát Sáng": "SuaPhatSang",
+    "Mystery Fireworks": "PhaoHoaBiAn", "Pháo hoa bí ẩn": "PhaoHoaBiAn", "Pháo Hoa Bí Ẩn": "PhaoHoaBiAn",
+};
+
+// Danh sách mã thử thách (để làm nút test trên trang /gifts)
+const ALL_ACTIONS = [...new Set(Object.values(GIFT_MAP))];
+
 // [MỚI] Ghi lại trạng thái để bạn mở link Render là xem được ngay
 let tiktokStatus = "Chưa kết nối";
 let lastError = "";
@@ -91,34 +127,8 @@ tiktokLiveConnection.on(WebcastEvent.GIFT, data => {
 
     console.log(`[QUÀ TỚI] ${senderName} tặng ${amount}x ${giftName} (id ${data.giftId})`);
 
-    let actionCode = null;
-
-    // --- QUÀ TIẾN LÊN ---
-    if (giftName === "Hoa Hồng" || giftName === "Hoa hồng" || giftName === "Rose") actionCode = "HoaHong";
-    else if (giftName === "Bắn Tim" || giftName === "Bắn tim" || giftName === "Finger Heart") actionCode = "BanTim";
-    else if (giftName === "Rosa") actionCode = "Rosa";
-    else if (giftName === "Nước hoa" || giftName === "Nước Hoa" || giftName === "Perfume") actionCode = "NuocHoa";
-    else if (giftName === "Bánh vòng" || giftName === "Bánh Vòng" || giftName === "Doughnut") actionCode = "BanhVong";
-    else if (giftName === "Thả tim" || giftName === "Thả Tim" || giftName === "Heart Me") actionCode = "ThaTim";
-    else if (giftName === "Sao đêm" || giftName === "Sao Đêm") actionCode = "SaoDem";
-    else if (giftName === "Chó Corgi" || giftName === "Corgi") actionCode = "ChoCorgi";
-    else if (giftName === "Súng bắn tiền" || giftName === "Súng Bắn Tiền" || giftName === "Money Gun") actionCode = "SungBanTien";
-    else if (giftName === "Thiên nga" || giftName === "Thiên Nga" || giftName === "Swan") actionCode = "ThienNga";
-    else if (giftName === "Thiên hà" || giftName === "Thiên Hà" || giftName === "Galaxy") actionCode = "ThienHa";
-    else if (giftName === "Cá Voi" || giftName === "Cá voi" || giftName === "Whale") actionCode = "CaVoi";
-
-    // --- QUÀ ĐẨY LÙI ---
-    else if (giftName === "GG") actionCode = "GG";
-    else if (giftName === "Ánh sao tỏa sáng" || giftName === "Ánh sao" || giftName === "Shining Star") actionCode = "AnhSao";
-    else if (giftName === "Cỏ bốn lá" || giftName === "Lucky Clover") actionCode = "CoBonLa";
-    else if (giftName === "Hoan hô" || giftName === "Bravo") actionCode = "HoanHo";
-    else if (giftName === "Little Kisses") actionCode = "LittleKisses";
-    else if (giftName === "Mũ và ria mép" || giftName === "Mũ và Ria mép" || giftName === "Hat and Mustache") actionCode = "MuVaRiaMep";
-    else if (giftName === "Pháo bông que" || giftName === "Pháo Bông Que" || giftName === "Sparkler") actionCode = "PhaoBongQue";
-    else if (giftName === "Mèo" || giftName === "Cat") actionCode = "Meo";
-    else if (giftName === "Nàng tiên cá" || giftName === "Nàng Tiên Cá" || giftName === "Mermaid") actionCode = "NangTienCa";
-    else if (giftName === "Sứa phát sáng" || giftName === "Sứa Phát Sáng" || giftName === "Glowing Jellyfish") actionCode = "SuaPhatSang";
-    else if (giftName === "Pháo hoa bí ẩn" || giftName === "Pháo Hoa Bí Ẩn" || giftName === "Mystery Fireworks") actionCode = "PhaoHoaBiAn";
+    // Tra tên quà trong bảng GIFT_MAP (ở cuối phần cài đặt phía trên)
+    const actionCode = GIFT_MAP[giftName] || null;
 
     // Đẩy quà vào kho cho Roblox lấy
     if (actionCode) {
@@ -143,6 +153,50 @@ app.get('/', (req, res) => {
         <p>Quà gần nhất: ${lastGift}</p>
         <p>Quà đang chờ Roblox lấy: ${giftQueue.length}</p>
     `);
+});
+
+// ==========================================
+// [MỚI] TRANG /gifts: XEM TÊN QUÀ THẬT & TEST MIỄN PHÍ
+// ==========================================
+function escapeHtml(t) {
+    return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+app.get('/gifts', async (req, res) => {
+    // Phần 1: nút test từng thử thách (không tốn xu)
+    const buttons = ALL_ACTIONS.map(a =>
+        `<a href="/test?action=${a}" target="_blank" style="display:inline-block;margin:4px;padding:8px 12px;background:#eee;border-radius:6px;text-decoration:none">${a}</a>`
+    ).join('');
+
+    // Phần 2: danh sách quà thật của TikTok (cần đang live)
+    let giftTable = '';
+    try {
+        const gifts = await tiktokLiveConnection.fetchAvailableGifts();
+        const list = (Array.isArray(gifts) ? gifts : [])
+            .map(g => ({ name: g.name || '', coins: g.diamond_count || 0, id: g.id }))
+            .sort((a, b) => a.coins - b.coins);
+
+        const rows = list.map(g => {
+            const code = GIFT_MAP[g.name];
+            const status = code ? `✅ ${code}` : '—';
+            const bg = code ? '#e8f8e8' : '#fff';
+            return `<tr style="background:${bg}"><td>${escapeHtml(g.name)}</td><td>${g.coins}</td><td>${status}</td><td>${g.id}</td></tr>`;
+        }).join('');
+
+        giftTable = `<p>Có ${list.length} quà. Dòng xanh là quà đã có trong bảng.</p>
+            <table border="1" cellpadding="6" style="border-collapse:collapse">
+            <tr><th>Tên quà (TikTok gửi về)</th><th>Xu</th><th>Mã thử thách</th><th>ID</th></tr>${rows}</table>`;
+    } catch (err) {
+        giftTable = `<p>⚠️ Chưa lấy được danh sách quà. Bạn cần <b>đang live</b> và trang chủ báo <b>ĐÃ KẾT NỐI</b>.</p>
+            <p>Lý do: ${escapeHtml(err && err.message ? err.message : err)}</p>`;
+    }
+
+    res.send(`<meta name="viewport" content="width=device-width, initial-scale=1">
+        <h2>🎁 Test quà miễn phí</h2>
+        <p>Vào game trên điện thoại trước, rồi bấm nút bất kỳ:</p>
+        <div>${buttons}</div>
+        <h2>📋 Danh sách quà thật của TikTok</h2>
+        ${giftTable}`);
 });
 
 // ==========================================
